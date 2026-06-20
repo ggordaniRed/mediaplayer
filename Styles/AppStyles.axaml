@@ -1,0 +1,224 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         Dark-theme overrides for the retro media player UI.
+    ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- ── Transport buttons ──────────────────────────────────────────── -->
+    <Style Selector="Button.transport">
+        <Setter Property="Background"       Value="#1e1f2e" />
+        <Setter Property="Foreground"       Value="#c0c8e0" />
+        <Setter Property="BorderBrush"      Value="#2a2b3d" />
+        <Setter Property="BorderThickness"  Value="1" />
+        <Setter Property="CornerRadius"     Value="6" />
+        <Setter Property="Padding"          Value="10,8" />
+        <Setter Property="Cursor"           Value="Hand" />
+    </Style>
+    <Style Selector="Button.transport:pointerover">
+        <Setter Property="Background" Value="#2a2b3d" />
+    </Style>
+    <Style Selector="Button.transport:pressed">
+        <Setter Property="Background" Value="#353650" />
+    </Style>
+    <Style Selector="Button.transport.primary">
+        <Setter Property="Background" Value="#4c3db0" />
+        <Setter Property="BorderBrush" Value="#7c6df0" />
+    </Style>
+    <Style Selector="Button.transport.primary:pointerover">
+        <Setter Property="Background" Value="#5c4dc0" />
+    </Style>
+    <Style Selector="Button.transport.primary:pressed">
+        <Setter Property="Background" Value="#6a5dd0" />
+    </Style>
+
+    <!-- ── Icon buttons (EQ, visualizer, mute) ────────────────────────── -->
+    <Style Selector="Button.icon-btn, ToggleButton.icon-btn">
+        <Setter Property="Background"      Value="Transparent" />
+        <Setter Property="Foreground"      Value="#8090b0" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding"         Value="8,6" />
+        <Setter Property="FontSize"        Value="13" />
+        <Setter Property="CornerRadius"    Value="4" />
+        <Setter Property="Cursor"          Value="Hand" />
+    </Style>
+    <Style Selector="Button.icon-btn:pointerover, ToggleButton.icon-btn:pointerover">
+        <Setter Property="Background" Value="#1e1f2e" />
+        <Setter Property="Foreground" Value="#c0c8e0" />
+    </Style>
+    <Style Selector="Button.icon-btn:pressed, ToggleButton.icon-btn:pressed">
+        <Setter Property="Background" Value="#2a2b3d" />
+    </Style>
+    <Style Selector="ToggleButton.icon-btn:checked">
+        <Setter Property="Foreground" Value="#7c6df0" />
+    </Style>
+
+    <!-- ── Danger buttons ─────────────────────────────────────────────── -->
+    <Style Selector="Button.danger, Button.micro.danger">
+        <Setter Property="Foreground" Value="#c04040" />
+    </Style>
+    <Style Selector="Button.danger:pointerover, Button.micro.danger:pointerover">
+        <Setter Property="Foreground" Value="#e05050" />
+    </Style>
+
+    <!-- ── Micro buttons (playlist row actions) ───────────────────────── -->
+    <Style Selector="Button.micro">
+        <Setter Property="Background"      Value="Transparent" />
+        <Setter Property="Foreground"      Value="#505870" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding"         Value="4,2" />
+        <Setter Property="FontSize"        Value="11" />
+        <Setter Property="Cursor"          Value="Hand" />
+        <Setter Property="CornerRadius"    Value="3" />
+    </Style>
+    <Style Selector="Button.micro:pointerover">
+        <Setter Property="Foreground"  Value="#a0a8c0" />
+        <Setter Property="Background"  Value="#1e1f2e" />
+    </Style>
+
+    <!-- ── EQ preset buttons ──────────────────────────────────────────── -->
+    <Style Selector="Button.preset">
+        <Setter Property="Background"      Value="#1a1b26" />
+        <Setter Property="Foreground"      Value="#8090b0" />
+        <Setter Property="BorderBrush"     Value="#22232f" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius"    Value="4" />
+        <Setter Property="Padding"         Value="8,3" />
+        <Setter Property="FontSize"        Value="11" />
+        <Setter Property="Cursor"          Value="Hand" />
+    </Style>
+    <Style Selector="Button.preset:pointerover">
+        <Setter Property="Background" Value="#22232f" />
+        <Setter Property="Foreground" Value="#c0c8e0" />
+    </Style>
+    <Style Selector="Button.preset:pressed">
+        <Setter Property="Background" Value="#2a2b3d" />
+    </Style>
+
+    <!-- ── EQ enable toggle ───────────────────────────────────────────── -->
+    <Style Selector="ToggleButton.eq-toggle">
+        <Setter Property="Background"      Value="#1a1b26" />
+        <Setter Property="Foreground"      Value="#505870" />
+        <Setter Property="BorderBrush"     Value="#22232f" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius"    Value="4" />
+        <Setter Property="Padding"         Value="10,4" />
+        <Setter Property="FontSize"        Value="11" />
+        <Setter Property="FontWeight"      Value="Bold" />
+    </Style>
+    <Style Selector="ToggleButton.eq-toggle:checked">
+        <Setter Property="Background"  Value="#3a2d80" />
+        <Setter Property="Foreground"  Value="#9d8ff0" />
+        <Setter Property="BorderBrush" Value="#7c6df0" />
+    </Style>
+
+    <!-- ── ComboBox dark style ────────────────────────────────────────── -->
+    <Style Selector="ComboBox">
+        <Setter Property="Background"      Value="#1a1b26" />
+        <Setter Property="Foreground"      Value="#a0a8c0" />
+        <Setter Property="BorderBrush"     Value="#22232f" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius"    Value="4" />
+        <Setter Property="FontSize"        Value="11" />
+        <Setter Property="Height"          Value="28" />
+    </Style>
+    <Style Selector="ComboBox:pointerover">
+        <Setter Property="BorderBrush" Value="#3a3b50" />
+    </Style>
+    <Style Selector="ComboBoxItem">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="#a0a8c0" />
+        <Setter Property="Padding"    Value="8,4" />
+        <Setter Property="FontSize"   Value="11" />
+    </Style>
+    <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#2a2b3d" />
+    </Style>
+    <Style Selector="ComboBoxItem:selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="#3a2d80" />
+    </Style>
+
+    <!-- ── ListBoxItem selection with accent left border ──────────────── -->
+    <Style Selector="ListBoxItem:selected">
+        <Setter Property="BorderBrush"     Value="#7c6df0" />
+        <Setter Property="BorderThickness" Value="3,0,0,0" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="#2a2b3d" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#1e1f2e" />
+    </Style>
+
+    <!-- ── Slider base track ──────────────────────────────────────────── -->
+    <Style Selector="Slider /template/ Border#PART_TrackContainer">
+        <Setter Property="Background" Value="#22232f" />
+    </Style>
+
+    <!-- ── Seek slider ────────────────────────────────────────────────── -->
+    <Style Selector="Slider.seek-slider">
+        <Setter Property="Foreground" Value="#5c4dc0" />
+    </Style>
+    <Style Selector="Slider.seek-slider /template/ Thumb">
+        <Setter Property="Width"        Value="14" />
+        <Setter Property="Height"       Value="14" />
+    </Style>
+    <Style Selector="Slider.seek-slider:pointerover /template/ Thumb">
+        <Setter Property="Width"  Value="16" />
+        <Setter Property="Height" Value="16" />
+    </Style>
+
+    <!-- ── Volume slider ──────────────────────────────────────────────── -->
+    <Style Selector="Slider.volume-slider">
+        <Setter Property="Foreground" Value="#5c4dc0" />
+    </Style>
+    <Style Selector="Slider.volume-slider /template/ Thumb">
+        <Setter Property="Width"  Value="12" />
+        <Setter Property="Height" Value="12" />
+    </Style>
+
+    <!-- ── EQ band vertical slider ────────────────────────────────────── -->
+    <Style Selector="Slider.eq-band">
+        <Setter Property="Foreground" Value="#5c4dc0" />
+    </Style>
+    <Style Selector="Slider.eq-band /template/ Thumb">
+        <Setter Property="Width"  Value="12" />
+        <Setter Property="Height" Value="12" />
+    </Style>
+
+    <!-- ── Green Head skin buttons ───────────────────────────────────── -->
+    <Style Selector="Button.skin-btn">
+        <Setter Property="Background"      Value="#1a3a10" />
+        <Setter Property="Foreground"      Value="#80FF40" />
+        <Setter Property="BorderBrush"     Value="#40882a" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius"    Value="12" />
+        <Setter Property="Padding"         Value="8,6" />
+        <Setter Property="Cursor"          Value="Hand" />
+        <Setter Property="MinWidth"        Value="36" />
+        <Setter Property="MinHeight"       Value="30" />
+    </Style>
+    <Style Selector="Button.skin-btn:pointerover">
+        <Setter Property="Background" Value="#2a5a18" />
+    </Style>
+    <Style Selector="Button.skin-btn:pressed">
+        <Setter Property="Background" Value="#3a7a28" />
+    </Style>
+    <Style Selector="Button.skin-btn.primary">
+        <Setter Property="Background" Value="#2a6a15" />
+        <Setter Property="BorderBrush" Value="#60CC30" />
+    </Style>
+
+    <!-- ── Green skin slider ──────────────────────────────────────────── -->
+    <Style Selector="Slider.skin-slider">
+        <Setter Property="Foreground" Value="#60CC30" />
+    </Style>
+    <Style Selector="Slider.skin-slider /template/ Thumb">
+        <Setter Property="Width"  Value="12" />
+        <Setter Property="Height" Value="12" />
+    </Style>
+    <Style Selector="Slider.skin-slider /template/ Border#PART_TrackContainer">
+        <Setter Property="Background" Value="#1a3a10" />
+    </Style>
+
+</Styles>

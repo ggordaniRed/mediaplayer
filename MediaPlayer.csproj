@@ -1,0 +1,94 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>12</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <!-- Compiled XAML bindings for perf -->
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Both RIDs supported; publish with: dotnet publish -r osx-arm64  or  -r win-x64 -->
+    <RuntimeIdentifiers>osx-arm64;win-x64</RuntimeIdentifiers>
+    <RootNamespace>MediaPlayer</RootNamespace>
+    <AssemblyName>MediaPlayer</AssemblyName>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <!-- ═══════════════════ Avalonia UI ═══════════════════ -->
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.13" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.13" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.13" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.13" />
+    <!-- Dev-only visual tree explorer -->
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.13" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="SoundFlow" Version="1.4.1" />
+  </ItemGroup>
+
+  <!-- ═══════════════════ MVVM Toolkit ═══════════════════ -->
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <!-- ═══════════════════ LibVLCSharp ═══════════════════ -->
+  <ItemGroup>
+    <PackageReference Include="LibVLCSharp" Version="3.10.0" />
+    <PackageReference Include="LibVLCSharp.Avalonia" Version="3.10.0" />
+
+    <!--
+      Native VLC shared libraries.
+      Both packages are restored by NuGet; only the one matching the current
+      RuntimeIdentifier is copied to the output directory at publish time.
+    -->
+    <PackageReference Include="VideoLAN.LibVLC.Mac" Version="3.1.2" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.21" />
+  </ItemGroup>
+
+  <!-- ═══════════════════ SkiaSharp (visualizer) ═══════════════════ -->
+  <ItemGroup>
+    <!--
+      Avalonia already bundles Skia internally; SkiaSharp gives us direct
+      SK canvas access for the retro visualizer control.
+    -->
+    <PackageReference Include="SkiaSharp" Version="3.116.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="3.116.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="3.116.1" />
+    <PackageReference Include="Avalonia.Skia" Version="11.3.13" />
+  </ItemGroup>
+
+  <!-- ═══════════════════ AXAML assets ═══════════════════ -->
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <!-- Post-build: On macOS arm64, replace NuGet x64 dylibs with arm64 from VLC.app,
+       patch rpath, sign, and sync plugins. Needs: brew install cask vlc -->
+  <Target Name="PatchVlcArm64" AfterTargets="Build" Condition="'$(RuntimeIdentifier)' != 'win-x64' And $([MSBuild]::IsOSPlatform('OSX'))">
+    <PropertyGroup>
+      <VlcLib>/Applications/VLC.app/Contents/MacOS/lib</VlcLib>
+      <VlcPlugins>/Applications/VLC.app/Contents/MacOS/plugins</VlcPlugins>
+      <OutDir>$(OutputPath)</OutDir>
+    </PropertyGroup>
+
+    <Exec Command="cp &quot;$(VlcLib)/libvlc.dylib&quot; &quot;$(OutDir)libvlc.dylib.tmp&quot; 2&gt;/dev/null &amp;&amp; true" IgnoreExitCode="true" />
+    <Exec Command="cp &quot;$(VlcLib)/libvlccore.dylib&quot; &quot;$(OutDir)libvlccore.dylib&quot; 2&gt;/dev/null &amp;&amp; true" IgnoreExitCode="true" />
+    <Exec Command="install_name_tool -change '@rpath/libvlccore.dylib' '@loader_path/libvlccore.dylib' '$(OutDir)libvlc.dylib.tmp' 2&gt;/dev/null &amp;&amp; true" IgnoreExitCode="true" />
+    <Exec Command="install_name_tool -add_rpath '@loader_path' '$(OutDir)libvlccore.dylib' 2&gt;/dev/null; true" IgnoreExitCode="true" />
+    <Exec Command="mv &quot;$(OutDir)libvlc.dylib.tmp&quot; &quot;$(OutDir)libvlc.dylib&quot; 2&gt;/dev/null &amp;&amp; true" IgnoreExitCode="true" />
+    <Exec Command="codesign --force --sign - &quot;$(OutDir)libvlc.dylib&quot; 2&gt;/dev/null &amp;&amp; true" IgnoreExitCode="true" />
+    <Exec Command="codesign --force --sign - &quot;$(OutDir)libvlccore.dylib&quot; 2&gt;/dev/null &amp;&amp; true" IgnoreExitCode="true" />
+
+    <!-- Copy VLC plugins (quarantine-cleared) if not already present -->
+    <Exec Command="mkdir -p &quot;$(OutDir)plugins&quot;" />
+    <Exec Command="rsync -a --ignore-existing &quot;$(VlcPlugins)/&quot; &quot;$(OutDir)plugins/&quot; 2&gt;/dev/null &amp;&amp; true" IgnoreExitCode="true" />
+    <Exec Command="xattr -dr com.apple.quarantine &quot;$(OutDir)plugins&quot; 2&gt;/dev/null; true" IgnoreExitCode="true" />
+    <Exec Command="for f in &quot;$(OutDir)plugins/&quot;*.dylib; do codesign --force --sign - &quot;$$f&quot; 2&gt;/dev/null; done; true" IgnoreExitCode="true" />
+    <Exec Command="xattr -dr com.apple.quarantine &quot;$(OutDir)&quot; 2&gt;/dev/null; true" IgnoreExitCode="true" />
+
+    <Message Text="[PatchVlcArm64] arm64 VLC dylibs patched in $(OutDir)" Importance="high" />
+  </Target>
+
+</Project>

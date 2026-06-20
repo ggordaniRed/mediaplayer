@@ -1,0 +1,103 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MediaPlayer.ViewModels"
+        xmlns:ctrl="using:MediaPlayer.Controls"
+        x:Class="MediaPlayer.Views.GreenHeadWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="MediaPlayer"
+        Width="550" Height="500"
+        MinWidth="550" MinHeight="500"
+        Background="Transparent"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        CanResize="False">
+
+    <Canvas>
+        <!-- Robot head PNG — stretched taller to make head bigger -->
+        <Image Source="avares://MediaPlayer/Assets/robot-head.png"
+               Stretch="Uniform" Width="550" Height="300"
+               Canvas.Left="0" Canvas.Top="0" />
+
+        <!-- Visualizer overlaid on the forehead screen -->
+        <!-- Screen fractions: L=33.7%, R=66.3%, T=25.7%, B=54.9% of image -->
+        <!-- At 550x300: L=185, R=365, T=77, B=165 → W=180, H=88 -->
+        <ctrl:VisualizerControl
+            Canvas.Left="220" Canvas.Top="75"
+            Width="112" Height="75"
+            CaptureService="{Binding CaptureService}"
+            SoundFlow="{Binding SoundFlowAudio}"
+            StyleMode="Oscilloscope"
+            IsVisible="{Binding IsVisualizerVisible}" />
+
+        <!-- Transport buttons below the head -->
+        <StackPanel Canvas.Left="210" Canvas.Top="320"
+                    Orientation="Horizontal" Spacing="8">
+            <Button Command="{Binding PreviousCommand}" Classes="skin-btn" Padding="8,5">
+                <PathIcon Data="M6,18V6H8V18H6M9.5,12L18,6V18L9.5,12Z"
+                          Width="12" Height="12" Foreground="#80FF40" />
+            </Button>
+            <Button Command="{Binding PlayPauseCommand}" Classes="skin-btn primary" Padding="10,5">
+                <Panel>
+                    <PathIcon Data="M8,5.14V19.14L19,12.14Z"
+                              Width="14" Height="14" Foreground="#80FF40"
+                              IsVisible="{Binding !IsPlaying}" />
+                    <PathIcon Data="M14,19H18V5H14M6,19H10V5H6V19Z"
+                              Width="14" Height="14" Foreground="#80FF40"
+                              IsVisible="{Binding IsPlaying}" />
+                </Panel>
+            </Button>
+            <Button Command="{Binding StopCommand}" Classes="skin-btn" Padding="8,5">
+                <PathIcon Data="M6,6H18V18H6Z"
+                          Width="12" Height="12" Foreground="#80FF40" />
+            </Button>
+            <Button Command="{Binding NextCommand}" Classes="skin-btn" Padding="8,5">
+                <PathIcon Data="M16,18H18V6H16M6,18L14.5,12L6,6V18Z"
+                          Width="12" Height="12" Foreground="#80FF40" />
+            </Button>
+        </StackPanel>
+
+        <!-- Seek slider -->
+        <Slider Canvas.Left="195" Canvas.Top="360"
+                Width="160"
+                Minimum="0" Maximum="1"
+                x:Name="SeekSlider"
+                Value="{Binding Position, Mode=TwoWay}"
+                Classes="skin-slider" />
+
+        <!-- Time display -->
+        <StackPanel Canvas.Left="235" Canvas.Top="385"
+                    Orientation="Horizontal" Spacing="4">
+            <TextBlock Text="{Binding Elapsed, StringFormat=mm\\:ss}"
+                       Foreground="#50BB20" FontSize="11" />
+            <TextBlock Text="/" Foreground="#2a5a15" FontSize="11" />
+            <TextBlock Text="{Binding Duration, StringFormat=mm\\:ss}"
+                       Foreground="#50BB20" FontSize="11" />
+        </StackPanel>
+
+        <!-- Track title at bottom with dark background -->
+        <Border Canvas.Left="125" Canvas.Top="420"
+                Width="300" Height="26"
+                Background="#CC000000"
+                CornerRadius="8"
+                Padding="10,3">
+            <TextBlock Text="{Binding CurrentItem.Title}"
+                       Foreground="#80FF40"
+                       FontSize="11" FontWeight="SemiBold"
+                       TextAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+        </Border>
+
+        <!-- Switch / Close buttons -->
+        <StackPanel Canvas.Left="490" Canvas.Top="5"
+                    Orientation="Horizontal" Spacing="3">
+            <Button Content="☐" Command="{Binding ToggleSkinCommand}"
+                    ToolTip.Tip="Normal mode" Classes="skin-btn"
+                    FontSize="10" Padding="4,2" MinWidth="22" MinHeight="20" />
+            <Button Content="✕" Click="OnClose"
+                    ToolTip.Tip="Close" Classes="skin-btn"
+                    FontSize="10" Padding="4,2" MinWidth="22" MinHeight="20"
+                    Foreground="#FF5040" />
+        </StackPanel>
+    </Canvas>
+</Window>

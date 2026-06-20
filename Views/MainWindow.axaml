@@ -1,0 +1,207 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MediaPlayer.ViewModels"
+        xmlns:views="using:MediaPlayer.Views"
+        xmlns:ctrl="using:MediaPlayer.Controls"
+        xmlns:vlc="using:LibVLCSharp.Avalonia"
+        x:Class="MediaPlayer.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="MediaPlayer"
+        Width="1200" Height="720"
+        MinWidth="800" MinHeight="500"
+        Background="#0d0e14">
+
+    <Grid ColumnDefinitions="280,*">
+
+        <!-- ── Playlist Sidebar ────────────────────────────────────────────── -->
+        <views:PlaylistView Grid.Column="0"
+                            DataContext="{Binding Playlist}"
+                            Background="#13141d"
+                            BorderBrush="#22232f"
+                            BorderThickness="0,0,1,0" />
+
+        <!-- ── Right panel ────────────────────────────────────────────────── -->
+        <Grid Grid.Column="1" RowDefinitions="*,Auto,Auto,Auto">
+
+            <!-- ── Video + Visualizer ──────────────────────────────────────── -->
+            <Grid Grid.Row="0" Background="#0a0c12" RowDefinitions="3*,*">
+
+                <vlc:VideoView x:Name="VideoSurface"
+                               Grid.Row="0" Grid.RowSpan="2"
+                               MediaPlayer="{Binding VlcPlayer}" />
+
+                <!-- "Now Playing" overlay for audio-only files -->
+                <StackPanel Grid.Row="0" Grid.RowSpan="2"
+                            IsVisible="{Binding IsAudioOnly}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="12">
+                    <TextBlock Text="&#x266B;"
+                               FontSize="64"
+                               Foreground="#2a2b3d"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding CurrentItem.Title}"
+                               FontSize="22" FontWeight="SemiBold"
+                               Foreground="#c0c8e0"
+                               HorizontalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="500" />
+                    <TextBlock Text="{Binding CurrentItem.FileName}"
+                               FontSize="12"
+                               Foreground="#505870"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Visualizer at bottom portion of video area -->
+                <ctrl:VisualizerControl
+                    Grid.Row="1"
+                    CaptureService="{Binding CaptureService}"
+                    SoundFlow="{Binding SoundFlowAudio}"
+                    StyleMode="SpectrumBars"
+                    IsVisible="{Binding IsVisualizerVisible}"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    MinHeight="60" MaxHeight="250" />
+            </Grid>
+
+            <!-- ── EQ panel ───────────────────────────────────────────────── -->
+            <Panel Grid.Row="1" IsVisible="{Binding IsEqualizerPanelOpen}">
+                <views:EqualizerView DataContext="{Binding Equalizer}"
+                                     Background="#13141d"
+                                     Padding="12,8" />
+            </Panel>
+
+            <!-- ── Transport bar ───────────────────────────────────────────── -->
+            <Border Grid.Row="2"
+                    Background="#1a1b26"
+                    Padding="16,8"
+                    BorderBrush="#22232f"
+                    BorderThickness="0,1,0,0">
+                <Grid RowDefinitions="Auto,Auto">
+
+                    <!-- Seek slider -->
+                    <Slider Grid.Row="0"
+                            x:Name="SeekSlider"
+                            Minimum="0" Maximum="1"
+                            Value="{Binding Position, Mode=TwoWay}"
+                            Classes="seek-slider"
+                            Margin="0,0,0,6" />
+
+                    <!-- Controls row -->
+                    <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto">
+
+                        <!-- Playback buttons -->
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    Spacing="6"
+                                    VerticalAlignment="Center">
+
+                            <Button Command="{Binding PreviousCommand}"
+                                    ToolTip.Tip="Previous (←)" Classes="transport">
+                                <PathIcon Data="M6,18V6H8V18H6M9.5,12L18,6V18L9.5,12Z"
+                                          Width="16" Height="16" Foreground="#c0c8e0" />
+                            </Button>
+
+                            <Button Command="{Binding PlayPauseCommand}"
+                                    ToolTip.Tip="Play / Pause (Space)" Classes="transport primary">
+                                <Panel>
+                                    <PathIcon Data="M8,5.14V19.14L19,12.14Z"
+                                              Width="16" Height="16" Foreground="#c0c8e0"
+                                              IsVisible="{Binding !IsPlaying}" />
+                                    <PathIcon Data="M14,19H18V5H14M6,19H10V5H6V19Z"
+                                              Width="16" Height="16" Foreground="#c0c8e0"
+                                              IsVisible="{Binding IsPlaying}" />
+                                </Panel>
+                            </Button>
+
+                            <Button Command="{Binding StopCommand}"
+                                    ToolTip.Tip="Stop" Classes="transport">
+                                <PathIcon Data="M6,6H18V18H6Z"
+                                          Width="14" Height="14" Foreground="#c0c8e0" />
+                            </Button>
+
+                            <Button Command="{Binding NextCommand}"
+                                    ToolTip.Tip="Next (→)" Classes="transport">
+                                <PathIcon Data="M16,18H18V6H16M6,18L14.5,12L6,6V18Z"
+                                          Width="16" Height="16" Foreground="#c0c8e0" />
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Time display -->
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="6">
+                            <TextBlock Text="{Binding Elapsed, StringFormat=hh\\:mm\\:ss}"
+                                       Foreground="#a0a8c0" FontSize="13" />
+                            <TextBlock Text="/" Foreground="#404560" FontSize="13" />
+                            <TextBlock Text="{Binding Duration, StringFormat=hh\\:mm\\:ss}"
+                                       Foreground="#a0a8c0" FontSize="13" />
+                        </StackPanel>
+
+                        <!-- Right controls -->
+                        <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    Spacing="6"
+                                    VerticalAlignment="Center">
+
+                            <Button Command="{Binding ToggleVisualizerCommand}"
+                                    ToolTip.Tip="Toggle Visualizer (V)" Classes="icon-btn">
+                                <PathIcon Data="M4,20H8V8H4V20M10,20H14V4H10V20M16,20H20V12H16V20Z"
+                                          Width="14" Height="14" />
+                            </Button>
+
+                            <Button Content="EQ" Command="{Binding ToggleEqualizerPanelCommand}"
+                                    ToolTip.Tip="Equalizer (E)" Classes="icon-btn"
+                                    FontWeight="Bold" FontSize="12" />
+
+                            <Button Content="👽" Command="{Binding ToggleSkinCommand}"
+                                    ToolTip.Tip="Green Head Skin (S)" Classes="icon-btn"
+                                    FontSize="14" />
+
+                            <Button Command="{Binding ToggleMuteCommand}"
+                                    ToolTip.Tip="Mute (M)" Classes="icon-btn">
+                                <Panel>
+                                    <PathIcon Data="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z"
+                                              Width="14" Height="14"
+                                              IsVisible="{Binding !IsMuted}" />
+                                    <PathIcon Data="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.63,14.91 21,13.5 21,12C21,7.72 18,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.5,12.43 16.5,12.21 16.5,12Z"
+                                              Width="14" Height="14"
+                                              IsVisible="{Binding IsMuted}" />
+                                </Panel>
+                            </Button>
+
+                            <Slider Minimum="0" Maximum="200"
+                                    Value="{Binding Volume}"
+                                    Width="100"
+                                    Classes="volume-slider"
+                                    ToolTip.Tip="Volume (↑↓)" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- ── Status bar + track selectors ───────────────────────────── -->
+            <Border Grid.Row="3" Background="#0d0e14" Padding="12,4">
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding StatusText}"
+                               Foreground="#505870" FontSize="12"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" />
+                    <ComboBox Grid.Column="1"
+                              ItemsSource="{Binding AudioTracks}"
+                              SelectedItem="{Binding SelectedAudioTrack}"
+                              PlaceholderText="Audio track"
+                              Margin="8,0" MinWidth="130" />
+                    <ComboBox Grid.Column="2"
+                              ItemsSource="{Binding SubtitleTracks}"
+                              SelectedItem="{Binding SelectedSubtitleTrack}"
+                              PlaceholderText="Subtitles"
+                              MinWidth="110" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
