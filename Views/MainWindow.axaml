@@ -52,16 +52,25 @@
                                HorizontalAlignment="Center" />
                 </StackPanel>
 
-                <!-- Visualizer at bottom portion of video area -->
+                <!-- CPU visualizer (click to cycle modes) — hidden when GPU shader is active -->
                 <ctrl:VisualizerControl
                     Grid.Row="0"
                     CaptureService="{Binding CaptureService}"
                     SoundFlow="{Binding SoundFlowAudio}"
                     StyleMode="SpectrumBars"
-                    IsVisible="{Binding IsVisualizerVisible}"
+                    IsVisible="{Binding !IsShaderMode}"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
                     MinHeight="60" MaxHeight="450" />
+
+                <!-- GPU shader visualizer (toggle with G key) -->
+                <Panel Grid.Row="0" Grid.RowSpan="2"
+                       IsVisible="{Binding IsShaderMode}">
+                    <ctrl:ShaderVisualizerControl
+                        SoundFlow="{Binding SoundFlowAudio}"
+                        ShaderFile="drive_home.sksl"
+                        x:Name="ShaderViz" />
+                </Panel>
             </Grid>
 
             <!-- ── EQ panel ───────────────────────────────────────────────── -->

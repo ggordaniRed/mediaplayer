@@ -15,6 +15,35 @@ public partial class MainWindow : Window
         AddHandler(DragDrop.DropEvent,     OnFileDrop);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
 
+        // Pump audio data to the GPU shader visualizer
+        var shaderTimer = new Avalonia.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(33)
+        };
+        shaderTimer.Tick += (_, _) =>
+        {
+            if (DataContext is MainWindowViewModel { SoundFlowAudio: { HasSignal: true } sf })
+            {
+                var spec = sf.GetSpectrum();
+                if (spec.Length > 0)
+                {
+                    float bass = 0, treble = 0, energy = 0;
+                    int len = spec.Length;
+                    for (int i = 0; i < len; i++)
+                    {
+                        energy += spec[i];
+                        if (i < len / 4) bass += spec[i];
+                        else if (i > len * 3 / 4) treble += spec[i];
+                    }
+                    bass /= Math.Max(1, len / 4);
+                    treble /= Math.Max(1, len / 4);
+                    energy /= len;
+                    ShaderViz.UpdateAudio(bass, treble, energy);
+                }
+            }
+        };
+        shaderTimer.Start();
+
         // Wire up seek slider drag guard so user can drag without VLC snapping it back.
         SeekSlider.PointerPressed  += (_, _) =>
         {
@@ -95,6 +124,10 @@ public partial class MainWindow : Window
                 break;
             case Key.S:
                 vm.ToggleSkinCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case Key.G:
+                vm.ToggleShaderModeCommand.Execute(null);
                 e.Handled = true;
                 break;
         }

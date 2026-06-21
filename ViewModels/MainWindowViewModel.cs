@@ -189,7 +189,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     // ── UI toggles ────────────────────────────────────────────────────────────
 
+    [ObservableProperty] private bool            _isShaderMode;
     [RelayCommand] private void ToggleVisualizer()     => IsVisualizerVisible = !IsVisualizerVisible;
+    [RelayCommand] private void ToggleShaderMode()     => IsShaderMode = !IsShaderMode;
     [RelayCommand] private void ToggleEqualizerPanel() => IsEqualizerPanelOpen = !IsEqualizerPanelOpen;
     [RelayCommand] private void ToggleMute()           => IsMuted = !IsMuted;
 

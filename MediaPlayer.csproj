@@ -61,7 +61,8 @@
 
   <!-- ═══════════════════ AXAML assets ═══════════════════ -->
   <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Include="Assets\**" Exclude="Assets\Shaders\**" />
+    <Content Include="Assets\Shaders\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Post-build: On macOS arm64, replace NuGet x64 dylibs with arm64 from VLC.app,
