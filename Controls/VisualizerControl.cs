@@ -164,6 +164,9 @@ public sealed class VisualizerControl : Control
                 case VisualizerStyle.ParticleWave:
                     DrawParticleWave(canvas, spectrum, w, h);
                     break;
+                case VisualizerStyle.DriveHome:
+                    DrawDriveHome(canvas, spectrum, w, h);
+                    break;
             }
 
             canvas.Restore();
@@ -506,6 +509,204 @@ public sealed class VisualizerControl : Control
                 _particles.RemoveRange(0, _particles.Count - 800);
         }
 
+        // ── "The Drive Home" — rain + bokeh night driving scene ─────────────
+
+        private static readonly List<BokehLight> _bokehs = new();
+        private static readonly List<RainDrop> _raindrops = new();
+        private static bool _driveInitialized;
+
+        private static void DrawDriveHome(SKCanvas canvas, float[] spectrum, float w, float h)
+        {
+            // Dark blue-black sky gradient
+            using var bgPaint = new SKPaint
+            {
+                Shader = SKShader.CreateLinearGradient(
+                    new SKPoint(w / 2, 0), new SKPoint(w / 2, h),
+                    new SKColor[] { new(8, 8, 20), new(15, 12, 25), new(5, 5, 12) },
+                    new float[] { 0f, 0.6f, 1f },
+                    SKShaderTileMode.Clamp)
+            };
+            canvas.DrawRect(0, 0, w, h, bgPaint);
+
+            // Audio analysis
+            float bass = 0, mids = 0, treble = 0, energy = 0;
+            int len = spectrum.Length;
+            for (int i = 0; i < len; i++)
+            {
+                float v = spectrum[i];
+                energy += v;
+                if (i < len / 4) bass += v;
+                else if (i < len * 3 / 4) mids += v;
+                else treble += v;
+            }
+            bass /= Math.Max(1, len / 4);
+            mids /= Math.Max(1, len / 2);
+            treble /= Math.Max(1, len / 4);
+            energy /= len;
+
+            // Road horizon line
+            float horizon = h * 0.55f;
+            using var roadPaint = new SKPaint { Color = new SKColor(10, 10, 15) };
+            canvas.DrawRect(0, horizon, w, h - horizon, roadPaint);
+
+            // Road center line (dashed, moving)
+            using var linePaint = new SKPaint
+            {
+                Color = new SKColor(80, 70, 30, 150),
+                StrokeWidth = 2, IsStroke = true, IsAntialias = true
+            };
+            float roadSpeed = _time * 80 + bass * 200;
+            for (int i = 0; i < 8; i++)
+            {
+                float fy = horizon + (i * 30 + (roadSpeed % 30));
+                float perspective = (fy - horizon) / (h - horizon);
+                float cx = w / 2 + MathF.Sin(_time * 0.3f) * 20 * perspective;
+                float dashLen = 15 * (1 + perspective);
+                if (fy < h)
+                    canvas.DrawLine(cx, fy, cx, fy + dashLen, linePaint);
+            }
+
+            // Initialize bokeh lights
+            if (!_driveInitialized || _bokehs.Count < 30)
+            {
+                _driveInitialized = true;
+                _bokehs.Clear();
+                for (int i = 0; i < 40; i++)
+                {
+                    _bokehs.Add(NewBokeh(w, h, horizon, i));
+                }
+            }
+
+            // Update and draw bokeh lights
+            using var bokehPaint = new SKPaint { IsAntialias = true };
+            for (int i = 0; i < _bokehs.Count; i++)
+            {
+                var b = _bokehs[i];
+                b.Z -= (0.003f + energy * 0.01f + bass * 0.02f);
+                if (b.Z <= 0.01f)
+                {
+                    _bokehs[i] = NewBokeh(w, h, horizon, i + (int)(_time * 100));
+                    continue;
+                }
+                _bokehs[i] = b;
+
+                // Project 3D to 2D with perspective
+                float scale = 1f / b.Z;
+                float sx = w / 2 + (b.X - w / 2) * scale * 0.3f;
+                float sy = horizon - (horizon - b.Y) * scale * 0.15f + horizon * 0.3f;
+
+                float size = b.Size * scale * (0.5f + bass * 0.5f);
+                size = Math.Clamp(size, 1, 80);
+                byte alpha = (byte)Math.Clamp(180 * (1 - b.Z) + energy * 100, 20, 240);
+
+                // Outer glow
+                bokehPaint.Shader = SKShader.CreateRadialGradient(
+                    new SKPoint(sx, sy), size,
+                    new SKColor[] {
+                        new(b.Color.Red, b.Color.Green, b.Color.Blue, alpha),
+                        new(b.Color.Red, b.Color.Green, b.Color.Blue, (byte)(alpha / 3)),
+                        new(b.Color.Red, b.Color.Green, b.Color.Blue, 0)
+                    },
+                    new float[] { 0f, 0.5f, 1f },
+                    SKShaderTileMode.Clamp);
+                canvas.DrawCircle(sx, sy, size, bokehPaint);
+
+                // Bright core
+                bokehPaint.Shader = null;
+                bokehPaint.Color = new SKColor(
+                    (byte)Math.Min(255, b.Color.Red + 80),
+                    (byte)Math.Min(255, b.Color.Green + 80),
+                    (byte)Math.Min(255, b.Color.Blue + 80),
+                    (byte)(alpha / 2));
+                canvas.DrawCircle(sx, sy, size * 0.3f, bokehPaint);
+            }
+
+            // Rain drops
+            int targetDrops = 60 + (int)(treble * 200);
+            while (_raindrops.Count < targetDrops && _raindrops.Count < 300)
+            {
+                float rx = MathF.Abs(HashFloat(_time + _raindrops.Count * 7.13f)) * w;
+                float ry = -MathF.Abs(HashFloat(_time + _raindrops.Count * 3.71f)) * h * 0.3f;
+                _raindrops.Add(new RainDrop
+                {
+                    X = rx, Y = ry,
+                    Speed = 4 + MathF.Abs(HashFloat(_raindrops.Count * 1.7f)) * 6,
+                    Length = 8 + MathF.Abs(HashFloat(_raindrops.Count * 2.3f)) * 15,
+                    Alpha = 40 + (int)(MathF.Abs(HashFloat(_raindrops.Count * 0.9f)) * 60)
+                });
+            }
+
+            using var rainPaint = new SKPaint { IsAntialias = true, StrokeWidth = 1 };
+            for (int i = _raindrops.Count - 1; i >= 0; i--)
+            {
+                var r = _raindrops[i];
+                r.Y += r.Speed * (1 + bass * 3);
+                r.X -= 0.5f + energy * 2;
+                _raindrops[i] = r;
+
+                if (r.Y > h + 20) { _raindrops.RemoveAt(i); continue; }
+
+                rainPaint.Color = new SKColor(180, 200, 255, (byte)r.Alpha);
+                canvas.DrawLine(r.X, r.Y, r.X - 1, r.Y - r.Length, rainPaint);
+            }
+
+            // Windshield water distortion effect — subtle horizontal streaks
+            using var streakPaint = new SKPaint
+            {
+                Color = new SKColor(100, 120, 180, 8), StrokeWidth = 1
+            };
+            for (int i = 0; i < 20; i++)
+            {
+                float sy2 = MathF.Abs(HashFloat(i * 5.5f + _time * 0.1f)) * h;
+                canvas.DrawLine(0, sy2, w, sy2, streakPaint);
+            }
+
+            // Vignette
+            using var vigPaint = new SKPaint
+            {
+                Shader = SKShader.CreateRadialGradient(
+                    new SKPoint(w / 2, h / 2), Math.Max(w, h) * 0.6f,
+                    new SKColor[] { new(0, 0, 0, 0), new(0, 0, 0, 150) },
+                    SKShaderTileMode.Clamp)
+            };
+            canvas.DrawRect(0, 0, w, h, vigPaint);
+        }
+
+        private static BokehLight NewBokeh(float w, float h, float horizon, int seed)
+        {
+            float hash = HashFloat(seed * 3.7f + _time * 0.1f);
+            float hash2 = HashFloat(seed * 7.1f);
+            float hash3 = HashFloat(seed * 11.3f);
+
+            // Light type determines color
+            int type = Math.Abs(seed) % 5;
+            SKColor color = type switch
+            {
+                0 => new SKColor(255, 180, 60),   // street light (warm)
+                1 => new SKColor(255, 180, 60),   // street light
+                2 => new SKColor(200, 210, 255),   // headlight (cool white)
+                3 => new SKColor(255, 30, 30),     // tail light (red)
+                _ => new SKColor(
+                    (byte)(MathF.Abs(hash) * 200 + 55),
+                    (byte)(MathF.Abs(hash2) * 150 + 50),
+                    (byte)(MathF.Abs(hash3) * 200 + 55))  // random colored
+            };
+
+            return new BokehLight
+            {
+                X = w * 0.1f + MathF.Abs(hash) * w * 0.8f,
+                Y = horizon * MathF.Abs(hash2),
+                Z = 0.5f + MathF.Abs(hash3) * 0.5f,
+                Size = 3 + MathF.Abs(hash) * 12,
+                Color = color
+            };
+        }
+
+        private static float HashFloat(float n)
+        {
+            return MathF.Sin(n * 10234.324f) % 1f;
+        }
+
         // ── Gradient lerp ─────────────────────────────────────────────────────
 
         private static SKColor LerpGradient(SKColor[] stops, float t)
@@ -533,11 +734,24 @@ public enum VisualizerStyle
     Oscilloscope,
     CircularSpectrum,
     Fireworks,
-    ParticleWave
+    ParticleWave,
+    DriveHome
 }
 
 public struct Particle
 {
     public float X, Y, VX, VY, Life, Decay, Size;
     public SKColor Color;
+}
+
+public struct BokehLight
+{
+    public float X, Y, Z, Size;
+    public SKColor Color;
+}
+
+public struct RainDrop
+{
+    public float X, Y, Speed, Length;
+    public int Alpha;
 }

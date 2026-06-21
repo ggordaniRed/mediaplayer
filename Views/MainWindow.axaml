@@ -31,7 +31,7 @@
                                MediaPlayer="{Binding VlcPlayer}" />
 
                 <!-- "Now Playing" overlay for audio-only files -->
-                <StackPanel Grid.Row="0" Grid.RowSpan="2"
+                <StackPanel Grid.Row="1" Grid.RowSpan="2"
                             IsVisible="{Binding IsAudioOnly}"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
@@ -54,14 +54,14 @@
 
                 <!-- Visualizer at bottom portion of video area -->
                 <ctrl:VisualizerControl
-                    Grid.Row="1"
+                    Grid.Row="0"
                     CaptureService="{Binding CaptureService}"
                     SoundFlow="{Binding SoundFlowAudio}"
                     StyleMode="SpectrumBars"
                     IsVisible="{Binding IsVisualizerVisible}"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
-                    MinHeight="60" MaxHeight="250" />
+                    MinHeight="60" MaxHeight="450" />
             </Grid>
 
             <!-- ── EQ panel ───────────────────────────────────────────────── -->
