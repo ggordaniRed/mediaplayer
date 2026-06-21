@@ -1,0 +1,157 @@
+// Lightweight spiked sphere — old school spiky ball
+// Optimized for real-time: simple ray march, no shadows/AO/reflections
+
+uniform float2 iResolution;
+uniform float  iTime;
+uniform float  iBass;
+uniform float  iTreble;
+uniform float  iEnergy;
+
+float spikyBall(float3 p, float t) {
+    // Spin the sphere by rotating the sample point (sphere stays centered)
+    float a1 = t * 0.4;
+    float s1 = sin(a1);
+    float c1 = cos(a1);
+    p = float3(p.x * c1 - p.z * s1, p.y, p.x * s1 + p.z * c1);
+
+    float a2 = t * 0.15;
+    float s2 = sin(a2);
+    float c2 = cos(a2);
+    p = float3(p.x, p.y * c2 - p.z * s2, p.y * s2 + p.z * c2);
+
+    float d = length(p);
+    float theta = atan(p.z, p.x);
+    float phi = atan(sqrt(p.x*p.x + p.z*p.z), p.y);
+
+    // Quantize direction into spike grid (like the reference shader)
+    float nbSpikes = 20.0;
+    float div = 6.283 / nbSpikes;
+    float t1 = floor(theta / div) * div + div * 0.5;
+    float t2 = floor(phi / div) * div + div * 0.5;
+
+    // Direction of nearest spike
+    float3 spikeDir = float3(
+        sin(t2) * cos(t1),
+        cos(t2),
+        sin(t2) * sin(t1)
+    );
+
+    // Each spike has a unique random phase — short but snappy
+    float spikeId = t1 * 7.0 + t2 * 13.0;
+    float rnd = fract(sin(spikeId * 123.45) * 6789.01);
+    float rnd2 = fract(sin(spikeId * 67.89) * 1234.56);
+
+    // Fast oscillation — spikes pop in and out quickly
+    float spikePhase = sin(spikeId + t * (3.0 + rnd * 4.0)) * 0.5 + 0.5;
+    spikePhase = spikePhase * spikePhase; // sharpen the pop (more on/off than smooth)
+
+    // Short spikes that react to small freq changes
+    float bassSpike = iBass * spikePhase * (0.4 + rnd * 0.6);
+    float trebleSpike = iTreble * (1.0 - spikePhase) * (0.3 + rnd2 * 0.5);
+    float energyPop = iEnergy * step(0.6, rnd2) * spikePhase * 0.5; // random spikes pop on energy
+    float spikeLen = 0.02 + bassSpike * 0.6 + trebleSpike * 0.5 + energyPop;
+
+    // Capsule-like spike along spikeDir
+    float baseR = 0.8;
+    float3 spikeEnd = spikeDir * (baseR + spikeLen);
+    float3 spikeStart = spikeDir * baseR * 0.9;
+
+    // Distance to capsule (spike)
+    float3 pa = p - spikeStart;
+    float3 ba = spikeEnd - spikeStart;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    float spikeThick = mix(0.06, 0.008, h * h);
+    float dSpike = length(pa - ba * h) - spikeThick;
+
+    // Blend sphere and spike
+    float dSphere = d - baseR;
+    float k = 0.2;
+    float blend = clamp(0.5 + 0.5 * (dSphere - dSpike) / k, 0.0, 1.0);
+    return mix(dSphere, dSpike, blend) - k * blend * (1.0 - blend);
+}
+
+float3 calcNormal(float3 p, float t) {
+    float2 e = float2(0.003, 0.0);
+    return normalize(float3(
+        spikyBall(p + float3(e.x, e.y, e.y), t) - spikyBall(p - float3(e.x, e.y, e.y), t),
+        spikyBall(p + float3(e.y, e.x, e.y), t) - spikyBall(p - float3(e.y, e.x, e.y), t),
+        spikyBall(p + float3(e.y, e.y, e.x), t) - spikyBall(p - float3(e.y, e.y, e.x), t)
+    ));
+}
+
+float4 main(float2 fragCoord) {
+    fragCoord.y = iResolution.y - fragCoord.y;
+    float2 uv = (fragCoord - 0.5 * iResolution) / min(iResolution.x, iResolution.y);
+
+    float t = iTime;
+
+    // Background gradient
+    float3 col = mix(float3(0.02, 0.02, 0.06), float3(0.06, 0.03, 0.08), uv.y + 0.5);
+
+    // Camera — always looking at origin, sphere stays perfectly centered
+    float3 ro = float3(0.0, 0.0, -3.5);
+    float3 rd = normalize(float3(uv, 1.2));
+
+    // Ray march — only 40 steps needed for simple shape
+    float totalDist = 0.0;
+    float minDist = 100.0;
+    bool hit = false;
+
+    for (int i = 0; i < 40; i++) {
+        float3 p = ro + rd * totalDist;
+        float d = spikyBall(p, t);
+        minDist = min(minDist, abs(d));
+        if (abs(d) < 0.002) { hit = true; break; }
+        if (totalDist > 8.0) break;
+        totalDist += d * 0.8;
+    }
+
+    if (hit) {
+        float3 p = ro + rd * totalDist;
+        float3 n = calcNormal(p, t);
+
+        // Lighting
+        float3 light = normalize(float3(0.8, 1.0, -0.6));
+        float diff = max(dot(n, light), 0.0) * 0.7 + 0.2;
+        float spec = pow(max(dot(reflect(-light, n), -rd), 0.0), 16.0);
+
+        // Vibrant color — rainbow shifts across surface + time
+        float theta2 = atan(p.z, p.x);
+        float phi2 = atan(sqrt(p.x*p.x + p.z*p.z), p.y);
+        float hue = t * 0.4 + theta2 * 0.5 + phi2 * 0.3 + iBass * 2.0;
+
+        float3 c1 = float3(
+            0.55 + 0.45 * sin(hue),
+            0.55 + 0.45 * sin(hue + 2.094),
+            0.55 + 0.45 * sin(hue + 4.189)
+        );
+
+        // Spike tips glow hot — random color per spike
+        float tip = max((length(p) - 0.8) * 4.0, 0.0);
+        float tipHue = hue + tip * 2.0;
+        float3 tipCol = float3(
+            0.5 + 0.5 * sin(tipHue + 1.0),
+            0.5 + 0.5 * sin(tipHue + 3.0),
+            0.5 + 0.5 * sin(tipHue + 5.0)
+        ) * tip * (1.5 + iBass * 2.0);
+
+        col = c1 * diff + tipCol + spec * float3(0.9, 0.9, 1.0) * 0.5;
+
+        // Rim glow — color shifts opposite to surface
+        float fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 2.5);
+        float3 rimCol = float3(
+            0.5 + 0.5 * sin(hue + 3.14),
+            0.5 + 0.5 * sin(hue + 5.23),
+            0.5 + 0.5 * sin(hue + 1.05)
+        );
+        col += fresnel * rimCol * (0.6 + iEnergy);
+    } else {
+        // Soft glow around sphere
+        float glow = exp(-minDist * 4.0) * (0.3 + iEnergy * 0.3);
+        col += glow * float3(0.3, 0.15, 0.4);
+    }
+
+    col *= max(1.0 - length(uv) * 0.4, 0.0);
+    col = col / (col + 0.8);
+    return float4(col, 1.0);
+}

@@ -38,6 +38,8 @@ public class ShaderVisualizerControl : UserControl
     }
 
     private CompositionCustomVisual? _visual;
+    private static readonly string[] ShaderFiles = { "drive_home.sksl", "audio_sphere.sksl" };
+    private int _currentShaderIndex;
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
@@ -51,16 +53,7 @@ public class ShaderVisualizerControl : UserControl
         ElementComposition.SetElementChildVisual(this, _visual);
         _visual.Size = new Vector2((float)Bounds.Width, (float)Bounds.Height);
 
-        // Load shader
-        var shaderFile = ShaderFile ?? "drive_home.sksl";
-        var shaderPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", shaderFile);
-        if (!File.Exists(shaderPath))
-        {
-            // Try as Avalonia resource
-            shaderPath = shaderFile;
-        }
-
-        _visual.SendHandlerMessage(new ShaderMsg(ShaderCmd.Start, shaderPath, Bounds.Size));
+        LoadCurrentShader();
 
         LayoutUpdated += (_, _) =>
         {
@@ -70,6 +63,27 @@ public class ShaderVisualizerControl : UserControl
                 _visual.SendHandlerMessage(new ShaderMsg(ShaderCmd.Resize, null, Bounds.Size));
             }
         };
+    }
+
+    protected override void OnPointerPressed(Avalonia.Input.PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        _currentShaderIndex = (_currentShaderIndex + 1) % ShaderFiles.Length;
+        LoadCurrentShader();
+    }
+
+    public void NextShader()
+    {
+        _currentShaderIndex = (_currentShaderIndex + 1) % ShaderFiles.Length;
+        LoadCurrentShader();
+    }
+
+    private void LoadCurrentShader()
+    {
+        var file = ShaderFiles[_currentShaderIndex];
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Shaders", file);
+        if (!File.Exists(path)) path = file;
+        _visual?.SendHandlerMessage(new ShaderMsg(ShaderCmd.Start, path, Bounds.Size));
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

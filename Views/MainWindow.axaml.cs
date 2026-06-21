@@ -38,7 +38,11 @@ public partial class MainWindow : Window
                     bass /= Math.Max(1, len / 4);
                     treble /= Math.Max(1, len / 4);
                     energy /= len;
-                    ShaderViz.UpdateAudio(bass, treble, energy);
+                    // Amplify — raw spectrum values are very small (0.001-0.05)
+                    ShaderViz.UpdateAudio(
+                        Math.Min(bass * 8f, 2f),
+                        Math.Min(treble * 12f, 2f),
+                        Math.Min(energy * 10f, 2f));
                 }
             }
         };
@@ -128,6 +132,10 @@ public partial class MainWindow : Window
                 break;
             case Key.G:
                 vm.ToggleShaderModeCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case Key.T:
+                ShaderViz.NextShader();
                 e.Handled = true;
                 break;
         }

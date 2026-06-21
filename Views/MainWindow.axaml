@@ -63,14 +63,12 @@
                     VerticalAlignment="Stretch"
                     MinHeight="60" MaxHeight="450" />
 
-                <!-- GPU shader visualizer (toggle with G key) -->
-                <Panel Grid.Row="0" Grid.RowSpan="2"
-                       IsVisible="{Binding IsShaderMode}">
-                    <ctrl:ShaderVisualizerControl
-                        SoundFlow="{Binding SoundFlowAudio}"
-                        ShaderFile="drive_home.sksl"
-                        x:Name="ShaderViz" />
-                </Panel>
+                <!-- GPU shader visualizer (toggle with G key, click to cycle shaders) -->
+                <ctrl:ShaderVisualizerControl
+                    Grid.Row="0" Grid.RowSpan="2"
+                    SoundFlow="{Binding SoundFlowAudio}"
+                    IsVisible="{Binding IsShaderMode}"
+                    x:Name="ShaderViz" />
             </Grid>
 
             <!-- ── EQ panel ───────────────────────────────────────────────── -->
